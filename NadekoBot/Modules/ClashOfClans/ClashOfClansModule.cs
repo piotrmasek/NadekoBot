@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using NadekoBot.Modules.Permissions.Classes;
+using System.Linq;
 
 namespace NadekoBot.Modules.ClashOfClans
 {
@@ -17,6 +18,39 @@ namespace NadekoBot.Modules.ClashOfClans
         public static ConcurrentDictionary<ulong, List<ClashWar>> ClashWars { get; } = new ConcurrentDictionary<ulong, List<ClashWar>>();
 
         private readonly object writeLock = new object();
+
+        public ClashOfClansModule()
+        {
+            NadekoBot.OnReady += () => Task.Run(async () =>
+            {
+                var callExpire = new TimeSpan(2, 0, 0);
+                var warExpire = new TimeSpan(23, 0, 0);
+                while (true) {
+                    try
+                    {
+                        foreach (var cw in ClashWars)
+                        {
+                            foreach (var war in cw.Value)
+                            {
+                                var Bases = war.Bases;
+                                for (var i = 0; i < Bases.Length; i++)
+                                {
+                                    if (Bases[i] == null) continue;
+                                    if (!Bases[i].BaseDestroyed && DateTime.Now - Bases[i].TimeAdded >= callExpire)
+                                    {
+                                        await war.Channel.SendMessage($"❗🔰**Claim from @{Bases[i].CallUser} for a war against {war.ShortPrint()} has expired.**").ConfigureAwait(false);
+                                        Bases[i] = null;
+                                    }
+                                }
+                            }
+                            cw.Value.Where(w => !(w.Ended || DateTime.Now - w.StartedAt >= warExpire)).ToList();
+                        }
+                    }
+                    catch { }
+                    await Task.Delay(5000);
+                }
+            });
+        }
 
         public override void Install(ModuleManager manager)
         {
@@ -52,28 +86,8 @@ namespace NadekoBot.Modules.ClashOfClans
                             await e.Channel.SendMessage("💢🔰 Not a Valid war size").ConfigureAwait(false);
                             return;
                         }
-                        var cw = new ClashWar(enemyClan, size, e);
-                        //cw.Start();
+                        var cw = new ClashWar(enemyClan, size, e.Server.Id, e.Channel.Id);
                         wars.Add(cw);
-                        cw.OnUserTimeExpired += async (u) =>
-                        {
-                            try
-                            {
-                                await
-                                    e.Channel.SendMessage(
-                                        $"❗🔰**Claim from @{u} for a war against {cw.ShortPrint()} has expired.**")
-                                        .ConfigureAwait(false);
-                            }
-                            catch { }
-                        };
-                        cw.OnWarEnded += async () =>
-                        {
-                            try
-                            {
-                                await e.Channel.SendMessage($"❗🔰**War against {cw.ShortPrint()} ended.**").ConfigureAwait(false);
-                            }
-                            catch { }
-                        };
                         await e.Channel.SendMessage($"❗🔰**CREATED CLAN WAR AGAINST {cw.ShortPrint()}**").ConfigureAwait(false);
                         //war with the index X started.
                     });
@@ -93,9 +107,8 @@ namespace NadekoBot.Modules.ClashOfClans
                         var war = warsInfo.Item1[warsInfo.Item2];
                         try
                         {
-                            var startTask = war.Start();
+                            war.Start();
                             await e.Channel.SendMessage($"🔰**STARTED WAR AGAINST {war.ShortPrint()}**").ConfigureAwait(false);
-                            await startTask.ConfigureAwait(false);
                         }
                         catch
                         {
@@ -246,6 +259,7 @@ namespace NadekoBot.Modules.ClashOfClans
                             return;
                         }
                         warsInfo.Item1[warsInfo.Item2].End();
+                        await e.Channel.SendMessage($"❗🔰**War against {warsInfo.Item1[warsInfo.Item2].ShortPrint()} ended.**").ConfigureAwait(false);
 
                         var size = warsInfo.Item1[warsInfo.Item2].Size;
                         warsInfo.Item1.RemoveAt(warsInfo.Item2);
