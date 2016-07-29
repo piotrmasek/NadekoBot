@@ -88,7 +88,7 @@ namespace NadekoBot.Modules.NSFW
                     .Parameter("anything", ParameterType.Unparsed)
                     .Do(async e =>
                     {
-                        await e.Channel.SendMessage("http://i.imgur.com/MZkY1md.jpg").ConfigureAwait(false);
+                        await e.Channel.SendMessage("https://i.imgur.com/3MKo4Ke.gif").ConfigureAwait(false);
                     });
                 cgb.CreateCommand(Prefix + "boobs")
                     .Description("Real adult content.")
