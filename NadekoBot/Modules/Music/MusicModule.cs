@@ -859,6 +859,11 @@ namespace NadekoBot.Modules.Music
                 await textCh.SendMessage($"🎵 `Queue is full at {musicPlayer.MaxQueueSize}/{musicPlayer.MaxQueueSize}.` ");
                 throw;
             }
+            catch (Exception e)
+            {
+                await textCh.SendMessage(($"🎵 `The song couldn't be resolved. ({e.Message})` "));
+                throw e;
+            }
             if (!silent)
             {
                 var queuedMessage = await textCh.SendMessage($"🎵`Queued`{resolvedSong.PrettyName} **at** `#{musicPlayer.Playlist.Count + 1}`").ConfigureAwait(false);

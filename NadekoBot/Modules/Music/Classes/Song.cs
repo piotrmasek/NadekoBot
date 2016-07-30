@@ -354,7 +354,7 @@ Check the guides for your platform on how to setup ffmpeg correctly:
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed resolving the link.{ex.Message}");
-                return null;
+                throw ex;
             }
         }
 
