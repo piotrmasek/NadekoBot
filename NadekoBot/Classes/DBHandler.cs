@@ -33,6 +33,7 @@ namespace NadekoBot.Classes
             Connection.CreateTable<SongInfo>();
             Connection.CreateTable<PlaylistSongInfo>();
             Connection.CreateTable<MusicPlaylist>();
+            Connection.CreateTable<MusicToplist>();
             Connection.CreateTable<Incident>();
             Connection.Execute(Queries.TransactionTriggerQuery);
             try

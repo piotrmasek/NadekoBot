@@ -836,6 +836,23 @@ namespace NadekoBot.Modules.Music
                                 await lastFinishedMessage.Delete().ConfigureAwait(false);
                             if (playingMessage != null)
                                 await playingMessage.Delete().ConfigureAwait(false);
+
+
+                            var sinfo = DbHandler.Instance.FindOne<DataModels.SongInfo>(p => song.SongInfo.Title == p.Title);
+                            var toplistEntry = DbHandler.Instance.FindOne<MusicToplist>(p => sinfo.Id == p.SongInfoId);
+
+                            if (toplistEntry == null)
+                                toplistEntry = new MusicToplist()
+                                {
+                                    SongInfoId = (int)sinfo.Id
+                                };
+
+                            toplistEntry.Plays++;
+                            toplistEntry.LastPlayed = DateTime.Now;
+
+
+                            DbHandler.Instance.Save(toplistEntry);
+                            
                             lastFinishedMessage = await textCh.SendMessage($"🎵`Finished`{song.PrettyName}").ConfigureAwait(false);
                             if (mp.Autoplay && mp.Playlist.Count == 0 && song.SongInfo.Provider == "YouTube")
                             {
@@ -850,6 +867,21 @@ namespace NadekoBot.Modules.Music
                 };
                 mp.OnStarted += async (s, song) =>
                 {
+
+                    if(DbHandler.Instance.FindOne<DataModels.SongInfo>(p => song.SongInfo.Title == p.Title) == null)
+                    {
+                        var sinfo = new DataModels.SongInfo
+                        {
+                            Provider = song.SongInfo.Provider,
+                            ProviderType = (int)song.SongInfo.ProviderType,
+                            Title = song.SongInfo.Title,
+                            Uri = song.SongInfo.Uri,
+                            Query = song.SongInfo.Query
+                        };
+
+                        DbHandler.Instance.Save(sinfo);
+                    }
+
                     if (song.PrintStatusMessage)
                     {
                         var sender = s as MusicPlayer;
