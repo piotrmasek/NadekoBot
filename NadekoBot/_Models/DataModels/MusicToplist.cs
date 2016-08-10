@@ -16,7 +16,17 @@ namespace NadekoBot.DataModels
         public string GetInfoString()
         {
             var toplist = Classes.DbHandler.Instance.GetMusicToplist();
-            int place = toplist.FindIndex(p => p.Id == Id) + 1;
+            //int place = toplist.FindIndex(p => p.Id == Id) + 1;
+
+            int place = 1;
+            foreach(var song in toplist)
+            {
+                if (song.Plays == Plays)
+                    break;
+
+                ++place;
+            }
+
             string str = "";
 
             if (Plays >= 1)

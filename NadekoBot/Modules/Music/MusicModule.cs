@@ -804,6 +804,48 @@ namespace NadekoBot.Modules.Music
                         else
                             await e.Channel.SendMessage("🎶`Autoplay enabled.`").ConfigureAwait(false);
                     });
+
+                cgb.CreateCommand(Prefix + "toplist")
+                    .Alias(Prefix + "top")
+                    .Description($"Displays top songs")
+                    .Do(async e =>
+                    {
+                        var toplist = DbHandler.Instance.GetMusicToplist();
+                        var sinfo = DbHandler.Instance.GetAllRows<DataModels.SongInfo>().ToList();
+                        int place = 1;
+                        //string toSend = string.Join("\n", toplist.Select(tl => $"`{place++}.` {sinfo.Find(si => si.Id == tl.SongInfoId).Title}  `{tl.Plays} plays` "));  
+                        string toSend = $"`List of most played songs:` \n";
+
+                        try
+                        {
+                            int prevPlays = -1;
+                            foreach (var song in toplist)
+                            {
+
+                                string title = sinfo.Find(p => song.SongInfoId == p.Id).Title;
+                                if (prevPlays != song.Plays)
+                                {
+                                    toSend += $"`{place}.` `({song.Plays} plays)` ";
+                                    prevPlays = song.Plays;
+                                }
+                                else
+                                    toSend += '\t';
+
+                                toSend += $"**【 {title.TrimTo(55)} 】** ";
+                                //toSend += $"`{song.Plays} plays` ";
+                                toSend += '\n';
+
+                                place++;
+                            }
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Console.WriteLine("Exception caught while reading toplist and song data from db: " + ex.Message);
+                        }
+
+                        
+                        await e.Channel.SendMessage(toSend).ConfigureAwait(false);
+                    });
             });
         }
 
