@@ -131,6 +131,11 @@ Limit 20 OFFSET ?", num * 20);
         {
             return Connection.Table<CurrencyState>().OrderByDescending(cs => cs.Value).Take(n).ToList();
         }
+
+        internal List<MusicToplist> GetMusicToplist(int n = -1)
+        {
+            return Connection.Table<MusicToplist>().OrderByDescending(p => p.Plays).Take(n).ToList();
+        }
     }
 }
 

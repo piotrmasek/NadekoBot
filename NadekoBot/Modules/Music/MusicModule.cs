@@ -807,6 +807,37 @@ namespace NadekoBot.Modules.Music
             });
         }
 
+        private static MusicToplist GetTopListData(Song song)
+        {
+            var sinfo = DbHandler.Instance.FindOne<DataModels.SongInfo>(p => song.SongInfo.Title == p.Title);
+            var toplistEntry = DbHandler.Instance.FindOne<MusicToplist>(p => sinfo.Id == p.SongInfoId);
+
+            if (toplistEntry == null)
+                toplistEntry = new MusicToplist()
+                {
+                    SongInfoId = (int)sinfo.Id
+                };
+
+            return toplistEntry;
+        }
+
+        private static void SaveSongInfo(Song song)
+        {
+            if (DbHandler.Instance.FindOne<DataModels.SongInfo>(p => song.SongInfo.Title == p.Title) == null)
+            {
+                var sinfo = new DataModels.SongInfo
+                {
+                    Provider = song.SongInfo.Provider,
+                    ProviderType = (int)song.SongInfo.ProviderType,
+                    Title = song.SongInfo.Title,
+                    Uri = song.SongInfo.Uri,
+                    Query = song.SongInfo.Query
+                };
+
+                DbHandler.Instance.Save(sinfo);
+            }
+        }
+
         public static async Task QueueSong(User queuer, Channel textCh, Channel voiceCh, string query, bool silent = false, MusicType musicType = MusicType.Normal)
         {
             if (voiceCh == null || voiceCh.Server != textCh.Server)
@@ -837,23 +868,8 @@ namespace NadekoBot.Modules.Music
                             if (playingMessage != null)
                                 await playingMessage.Delete().ConfigureAwait(false);
 
-
-                            var sinfo = DbHandler.Instance.FindOne<DataModels.SongInfo>(p => song.SongInfo.Title == p.Title);
-                            var toplistEntry = DbHandler.Instance.FindOne<MusicToplist>(p => sinfo.Id == p.SongInfoId);
-
-                            if (toplistEntry == null)
-                                toplistEntry = new MusicToplist()
-                                {
-                                    SongInfoId = (int)sinfo.Id
-                                };
-
-                            toplistEntry.Plays++;
-                            toplistEntry.LastPlayed = DateTime.Now;
-
-
-                            DbHandler.Instance.Save(toplistEntry);
-                            
-                            lastFinishedMessage = await textCh.SendMessage($"🎵`Finished`{song.PrettyName}").ConfigureAwait(false);
+                            var toplistEntry = GetTopListData(song);
+                            lastFinishedMessage = await textCh.SendMessage($"🎵`Finished`{song.PrettyName}" + ' ' + toplistEntry.GetInfoString()).ConfigureAwait(false);
                             if (mp.Autoplay && mp.Playlist.Count == 0 && song.SongInfo.Provider == "YouTube")
                             {
                                 await QueueSong(queuer.Server.CurrentUser, textCh, voiceCh, (await SearchHelper.GetRelatedVideoIds(song.SongInfo.Query, 4)).ToList().Shuffle().FirstOrDefault(), silent, musicType).ConfigureAwait(false);
@@ -867,21 +883,8 @@ namespace NadekoBot.Modules.Music
                 };
                 mp.OnStarted += async (s, song) =>
                 {
-
-                    if(DbHandler.Instance.FindOne<DataModels.SongInfo>(p => song.SongInfo.Title == p.Title) == null)
-                    {
-                        var sinfo = new DataModels.SongInfo
-                        {
-                            Provider = song.SongInfo.Provider,
-                            ProviderType = (int)song.SongInfo.ProviderType,
-                            Title = song.SongInfo.Title,
-                            Uri = song.SongInfo.Uri,
-                            Query = song.SongInfo.Query
-                        };
-
-                        DbHandler.Instance.Save(sinfo);
-                    }
-
+                    SaveSongInfo(song);
+                    var toplistEntry = GetTopListData(song);
                     if (song.PrintStatusMessage)
                     {
                         var sender = s as MusicPlayer;
@@ -890,9 +893,16 @@ namespace NadekoBot.Modules.Music
 
                         try
                         {
+                            var msgTxt = $"🎵`Playing`{song.PrettyName}";
+                            msgTxt += ' ' + toplistEntry.GetInfoString() + ' ';
+                            msgTxt += $"`Vol: {(int)(sender.Volume * 100)}%`";
 
-                            var msgTxt = $"🎵`Playing`{song.PrettyName} `Vol: {(int)(sender.Volume * 100)}%`";
                             playingMessage = await textCh.SendMessage(msgTxt).ConfigureAwait(false);
+
+                            toplistEntry.Plays++;
+                            toplistEntry.LastPlayed = DateTime.Now;
+
+                            DbHandler.Instance.Save(toplistEntry);
                         }
                         catch { }
                     }

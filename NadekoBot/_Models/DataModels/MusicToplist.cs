@@ -12,5 +12,26 @@ namespace NadekoBot.DataModels
 
         [IndexedAttribute]
         public DateTime LastPlayed { get; set; }
+
+        public string GetInfoString()
+        {
+            var toplist = Classes.DbHandler.Instance.GetMusicToplist();
+            int place = toplist.FindIndex(p => p.Id == Id) + 1;
+            string str = "";
+
+            if (Plays >= 1)
+            {
+                str += $"`Played: {Plays} time";
+                if (Plays != 1)
+                    str += 's';
+
+                str += $" (#{place})` ";
+                str += $"`Last played: {LastPlayed}`";
+            }
+            else
+                str += "`Never played before`";
+
+            return str;
+        }
     }
 }
