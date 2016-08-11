@@ -807,22 +807,38 @@ namespace NadekoBot.Modules.Music
 
                 cgb.CreateCommand(Prefix + "toplist")
                     .Alias(Prefix + "top")
-                    .Description($"Displays top songs")
+                    .Description($"Displays top songs (max 30).")
+                    .Parameter("limit", ParameterType.Optional)
                     .Do(async e =>
                     {
-                        var toplist = DbHandler.Instance.GetMusicToplist();
-                        var sinfo = DbHandler.Instance.GetAllRows<DataModels.SongInfo>().ToList();
+                        int limit = 10;
+
+                        var arg = e.GetArg("limit").Trim();
+                        if (!string.IsNullOrEmpty(arg))
+                        {
+                            limit = /*arg == "all" ? -1 :*/ Math.Min(int.Parse(arg), 30);
+                        }
+                        if (limit <= 0)
+                            return;
+
+                        var toplist = DbHandler.Instance.GetMusicToplist(limit);
+                        var songinfos = DbHandler.Instance.GetAllRows<DataModels.SongInfo>().ToList();
                         int place = 1;
                         //string toSend = string.Join("\n", toplist.Select(tl => $"`{place++}.` {sinfo.Find(si => si.Id == tl.SongInfoId).Title}  `{tl.Plays} plays` "));  
-                        string toSend = $"`List of most played songs:` \n";
+                        string toSend = $"`List of {limit.ToString()} most played songs:` \n";
 
                         try
                         {
                             int prevPlays = -1;
                             foreach (var song in toplist)
                             {
-
-                                string title = sinfo.Find(p => song.SongInfoId == p.Id).Title;
+                                var sinfo = songinfos.Find(p => song.SongInfoId == p.Id);
+                                if(sinfo == null)
+                                {
+                                    Console.WriteLine("There's a problem within MusicToplist table at song: " + song.ToString());
+                                    continue;
+                                }
+                                string title = sinfo.Title;
                                 if (prevPlays != song.Plays)
                                 {
                                     toSend += $"`{place}.` `({song.Plays} plays)` ";

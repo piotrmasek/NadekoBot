@@ -39,6 +39,7 @@ namespace NadekoBot.Classes
             try
             {
                 Connection.Execute(Queries.DeletePlaylistTriggerQuery);
+                Connection.Execute(Queries.DeleteSongInfoTriggerQuery);
             }
             catch (Exception ex)
             {
@@ -166,5 +167,13 @@ AFTER DELETE ON MusicPlaylist
 FOR EACH ROW
 BEGIN
     DELETE FROM PlaylistSongInfo WHERE PlaylistId = OLD.Id;
+END";
+
+    public const string DeleteSongInfoTriggerQuery = @"
+CREATE TRIGGER IF NOT EXISTS music_toplist
+AFTER DELETE ON SongInfo
+FOR EACH ROW
+BEGIN
+    DELETE FROM MusicToplist WHERE SongInfoId = OLD.Id;
 END";
 }
