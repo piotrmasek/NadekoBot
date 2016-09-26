@@ -18,8 +18,11 @@ namespace NadekoBot.Modules.Searches.Commands
         public StreamNotifications(DiscordModule module) : base(module)
         {
             //start checking only after ready, because we need all servers to be initialized
-            NadekoBot.OnReady += () => Task.Run(async () =>
+            NadekoBot.OnReady += () =>
             {
+                Task.Run(async () =>
+            {
+                await Task.Delay(60000);
                 while (true)
                 {
                     cachedStatuses.Clear();
@@ -80,12 +83,13 @@ namespace NadekoBot.Modules.Searches.Commands
                     catch { }
                     finally
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(15));
+                        await Task.Delay(TimeSpan.FromSeconds(60));
                     }
                 }
             });
-        }
 
+            };
+        }
         private async Task<Tuple<bool, string>> GetStreamStatus(StreamNotificationConfig stream, bool checkCache = true)
         {
             bool isLive;
@@ -105,13 +109,13 @@ namespace NadekoBot.Modules.Searches.Commands
                     cachedStatuses.TryAdd(hitboxUrl, result);
                     return result;
                 case StreamNotificationConfig.StreamType.Twitch:
-                    var twitchUrl = $"https://api.twitch.tv/kraken/streams/{Uri.EscapeUriString(stream.Username)}";
+                    var twitchUrl = $"https://api.twitch.tv/kraken/streams/{Uri.EscapeUriString(stream.Username)}?client_id=67w6z9i09xv2uoojdm9l0wsyph4hxo6";
                     if (checkCache && cachedStatuses.TryGetValue(twitchUrl, out result))
                         return result;
                     response = await SearchHelper.GetResponseStringAsync(twitchUrl).ConfigureAwait(false);
                     data = JObject.Parse(response);
                     isLive = !string.IsNullOrWhiteSpace(data["stream"].ToString());
-                    result = new Tuple<bool, string>(isLive, isLive ? data["stream"]["viewers"].ToString() : "0");
+                    result = new Tuple<bool, string>(isLive, isLive ? data["stream"]["viewers"].ToString() : stream.Username);
                     cachedStatuses.TryAdd(twitchUrl, result);
                     return result;
                 case StreamNotificationConfig.StreamType.Beam:
@@ -127,7 +131,7 @@ namespace NadekoBot.Modules.Searches.Commands
                 default:
                     break;
             }
-            return new Tuple<bool, string>(false, "0");
+            return new Tuple<bool, string>(false, "NOT_FOUND");
         }
 
         internal override void Init(CommandGroupBuilder cgb)
@@ -176,7 +180,11 @@ namespace NadekoBot.Modules.Searches.Commands
                         }));
                         if (streamStatus.Item1)
                         {
-                            await e.Channel.SendMessage($"`Streamer {streamStatus.Item2} is online.`");
+                            await e.Channel.SendMessage($"`Streamer {stream} is online with {streamStatus.Item2} viewers.`");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage($"`Streamer {stream} is offline.`");
                         }
                     }
                     catch
@@ -205,7 +213,11 @@ namespace NadekoBot.Modules.Searches.Commands
                         }));
                         if (streamStatus.Item1)
                         {
-                            await e.Channel.SendMessage($"`Streamer {streamStatus.Item2} is online.`");
+                            await e.Channel.SendMessage($"`Streamer {stream} is online with {streamStatus.Item2} viewers.`");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage($"`Streamer {stream} is offline.`");
                         }
                     }
                     catch
@@ -234,7 +246,11 @@ namespace NadekoBot.Modules.Searches.Commands
                         }));
                         if (streamStatus.Item1)
                         {
-                            await e.Channel.SendMessage($"`Streamer {streamStatus.Item2} is online.`");
+                            await e.Channel.SendMessage($"`Streamer {stream} is online with {streamStatus.Item2} viewers.`");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage($"`Streamer {stream} is offline.`");
                         }
                     }
                     catch

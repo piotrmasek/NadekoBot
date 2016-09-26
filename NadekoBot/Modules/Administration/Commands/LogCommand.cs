@@ -21,7 +21,7 @@ namespace NadekoBot.Modules.Administration.Commands
         {
             NadekoBot.OnReady += () =>
             {
-                NadekoBot.Client.MessageReceived += MsgRecivd;
+                //NadekoBot.Client.MessageReceived += MsgRecivd;
                 NadekoBot.Client.MessageDeleted += MsgDltd;
                 NadekoBot.Client.MessageUpdated += MsgUpdtd;
                 NadekoBot.Client.UserUpdated += UsrUpdtd;
@@ -56,33 +56,36 @@ namespace NadekoBot.Modules.Administration.Commands
 
             // start the userpresence queue
 
-            NadekoBot.OnReady += () => Task.Run(async () =>
-             {
-                 while (true)
-                 {
-                     var toSend = new Dictionary<Channel, string>();
-                     //take everything from the queue and merge the messages which are going to the same channel
-                     KeyValuePair<Channel, string> item;
-                     while (voicePresenceUpdates.TryTake(out item))
-                     {
-                         if (toSend.ContainsKey(item.Key))
-                         {
-                             toSend[item.Key] = toSend[item.Key] + Environment.NewLine + item.Value;
-                         }
-                         else
-                         {
-                             toSend.Add(item.Key, item.Value);
-                         }
-                     }
-                     //send merged messages to each channel
-                     foreach (var k in toSend)
-                     {
-                         try { await k.Key.SendMessage(Environment.NewLine + k.Value).ConfigureAwait(false); } catch { }
-                     }
+            NadekoBot.OnReady += () =>
+            {
+                Task.Run(async () =>
+               {
+                   while (true)
+                   {
+                       var toSend = new Dictionary<Channel, string>();
+                       //take everything from the queue and merge the messages which are going to the same channel
+                       KeyValuePair<Channel, string> item;
+                       while (voicePresenceUpdates.TryTake(out item))
+                       {
+                           if (toSend.ContainsKey(item.Key))
+                           {
+                               toSend[item.Key] = toSend[item.Key] + Environment.NewLine + item.Value;
+                           }
+                           else
+                           {
+                               toSend.Add(item.Key, item.Value);
+                           }
+                       }
+                       //send merged messages to each channel
+                       foreach (var k in toSend)
+                       {
+                           try { await k.Key.SendMessage(Environment.NewLine + k.Value).ConfigureAwait(false); } catch { }
+                       }
 
-                     await Task.Delay(5000);
-                 }
-             });
+                       await Task.Delay(5000);
+                   }
+               });
+            };
         }
 
         private async void ChannelUpdated(object sender, ChannelUpdatedEventArgs e)
@@ -199,35 +202,35 @@ namespace NadekoBot.Modules.Administration.Commands
             catch { }
         }
 
-        private async void MsgRecivd(object sender, MessageEventArgs e)
-        {
-            try
-            {
-                if (e.Server == null || e.Channel.IsPrivate || e.User.Id == NadekoBot.Client.CurrentUser.Id)
-                    return;
-                var config = SpecificConfigurations.Default.Of(e.Server.Id);
-                var chId = config.LogServerChannel;
-                if (chId == null || e.Channel.Id == chId || config.LogserverIgnoreChannels.Contains(e.Channel.Id))
-                    return;
-                Channel ch;
-                if ((ch = e.Server.TextChannels.Where(tc => tc.Id == chId).FirstOrDefault()) == null)
-                    return;
-                if (!string.IsNullOrWhiteSpace(e.Message.Text))
-                {
-                    await ch.SendMessage(
-        $@"🕔`{prettyCurrentTime}` **New Message** `#{e.Channel.Name}`
-👤`{e.User?.ToString() ?? ("NULL")}` {e.Message.Text.Unmention()}").ConfigureAwait(false);
-                }
-                else
-                {
-                    await ch.SendMessage(
-        $@"🕔`{prettyCurrentTime}` **File Uploaded** `#{e.Channel.Name}`
-👤`{e.User?.ToString() ?? ("NULL")}` {e.Message.Attachments.FirstOrDefault()?.ProxyUrl}").ConfigureAwait(false);
-                }
+        //        private async void MsgRecivd(object sender, MessageEventArgs e)
+        //        {
+        //            try
+        //            {
+        //                if (e.Server == null || e.Channel.IsPrivate || e.User.Id == NadekoBot.Client.CurrentUser.Id)
+        //                    return;
+        //                var config = SpecificConfigurations.Default.Of(e.Server.Id);
+        //                var chId = config.LogServerChannel;
+        //                if (chId == null || e.Channel.Id == chId || config.LogserverIgnoreChannels.Contains(e.Channel.Id))
+        //                    return;
+        //                Channel ch;
+        //                if ((ch = e.Server.TextChannels.Where(tc => tc.Id == chId).FirstOrDefault()) == null)
+        //                    return;
+        //                if (!string.IsNullOrWhiteSpace(e.Message.Text))
+        //                {
+        //                    await ch.SendMessage(
+        //        $@"🕔`{prettyCurrentTime}` **New Message** `#{e.Channel.Name}`
+        //👤`{e.User?.ToString() ?? ("NULL")}` {e.Message.Text.Unmention()}").ConfigureAwait(false);
+        //                }
+        //                else
+        //                {
+        //                    await ch.SendMessage(
+        //        $@"🕔`{prettyCurrentTime}` **File Uploaded** `#{e.Channel.Name}`
+        //👤`{e.User?.ToString() ?? ("NULL")}` {e.Message.Attachments.FirstOrDefault()?.ProxyUrl}").ConfigureAwait(false);
+        //                }
 
-            }
-            catch { }
-        }
+        //            }
+        //            catch { }
+        //        }
         private async void MsgDltd(object sender, MessageEventArgs e)
         {
             try
