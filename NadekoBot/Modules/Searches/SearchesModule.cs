@@ -48,23 +48,24 @@ namespace NadekoBot.Modules.Searches
                 commands.ForEach(cmd => cmd.Init(cgb));
 
                 cgb.CreateCommand(Prefix + "we")
-                    .Description($"Shows weather data for a specified city and a country. BOTH ARE REQUIRED. Use country abbrevations. | `{Prefix}we Moscow RF`")
+                    .Description($"Shows weather data for a specified city. Use country abbrevations. | `{Prefix}we Moscow RF`")
                     .Parameter("city", ParameterType.Required)
-                    .Parameter("country", ParameterType.Required)
+                    .Parameter("country", ParameterType.Optional)
                     .Do(async e =>
                     {
+                        var apiKey = NadekoBot.Creds.OpenWeatherMapKey;
+                        //TODO: check the key
                         var city = e.GetArg("city").Replace(" ", "");
                         var country = e.GetArg("country").Replace(" ", "");
-                        var response = await SearchHelper.GetResponseStringAsync($"http://api.lawlypopzz.xyz/nadekobot/weather/?city={city}&country={country}").ConfigureAwait(false);
+                        var response = await SearchHelper.GetResponseStringAsync($"http://api.openweathermap.org/data/2.5/weather?q={city}&units=metric&APPID={apiKey}").ConfigureAwait(false);
 
-                        var obj = JObject.Parse(response)["weather"];
+                        var obj = JObject.Parse(response);
 
                         await e.Channel.SendMessage(
-$@"🌍 **Weather for** 【{obj["target"]}】
-📏 **Lat,Long:** ({obj["latitude"]}, {obj["longitude"]}) ☁ **Condition:** {obj["condition"]}
-😓 **Humidity:** {obj["humidity"]}% 💨 **Wind Speed:** {obj["windspeedk"]}km/h / {obj["windspeedm"]}mph 
-🔆 **Temperature:** {obj["centigrade"]}°C / {obj["fahrenheit"]}°F 🔆 **Feels like:** {obj["feelscentigrade"]}°C / {obj["feelsfahrenheit"]}°F
-🌄 **Sunrise:** {obj["sunrise"]} 🌇 **Sunset:** {obj["sunset"]}").ConfigureAwait(false);
+$@"🌍 **Weather for** 【{obj["name"]}, {obj["sys"]["country"]}】📏 **Lat, Long:** ({obj["coord"]["lat"]}; {obj["coord"]["lon"]}) 
+☁ **Condition:** {obj["weather"].First["main"]} - {obj["weather"].First["description"]} 🔆 **Temperature:** {obj["main"]["temp"]}°C
+😓 **Humidity:** {obj["main"]["humidity"]}% 💨 **Wind Speed:** {obj["wind"]["speed"]}m/s
+🌄 **Sunrise:** {obj["sys"]["sunrise"]} 🌇 **Sunset:** {obj["sys"]["sunset"]}").ConfigureAwait(false);
                     });
 
                 cgb.CreateCommand(Prefix + "yt")

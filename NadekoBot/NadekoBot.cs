@@ -111,6 +111,9 @@ namespace NadekoBot
             Console.WriteLine(string.IsNullOrWhiteSpace(Creds.OsuAPIKey)
                 ? "No osu! api key found. Song & top score lookups will not work. User lookups still available."
                 : "osu! API key provided.");
+            Console.WriteLine(string.IsNullOrWhiteSpace(Creds.OpenWeatherMapKey)
+                ? "No OpenWeatherMap API key provided. Weather lookups won't work."
+                : "OpenWatherMap API key provided.");
 
             BotMention = $"<@{Creds.BotId}>";
 
